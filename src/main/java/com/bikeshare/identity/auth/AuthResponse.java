@@ -1,3 +1,11 @@
 package com.bikeshare.identity.auth;
 
-public record AuthResponse(String token) {}
+import lombok.Builder;
+
+@Builder
+public record AuthResponse(
+        String token,
+        Long userId,
+        String fullName,
+        boolean isOwner
+) {}

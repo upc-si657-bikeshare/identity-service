@@ -1,5 +1,6 @@
 package com.bikeshare.identity.auth;
 
+import com.bikeshare.identity.config.JwtService;
 import com.bikeshare.identity.profile.ProfileService;
 import com.bikeshare.identity.user.User;
 import com.bikeshare.identity.user.UserRepository;
@@ -8,6 +9,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -15,6 +19,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final ProfileService profileService;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService; // <--- Inyectamos el nuevo servicio
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -31,7 +36,16 @@ public class AuthService {
         User savedUser = userRepository.save(user);
 
         profileService.createProfileForUser(savedUser);
-        return new AuthResponse("token_jwt_de_ejemplo" + savedUser.getEmail());
+
+        // Generar Token
+        String jwtToken = generateJwt(savedUser);
+
+        return AuthResponse.builder()
+                .token(jwtToken)
+                .userId(savedUser.getId())
+                .fullName(savedUser.getFullName())
+                .isOwner(savedUser.isOwner())
+                .build();
     }
 
     public AuthResponse login(AuthRequest request) {
@@ -42,6 +56,23 @@ public class AuthService {
             throw new IllegalArgumentException("Usuario o contraseña inválidos");
         }
 
-        return new AuthResponse("token_jwt_de_ejemplo" + user.getEmail());
+        // Generar Token
+        String jwtToken = generateJwt(user);
+
+        return AuthResponse.builder()
+                .token(jwtToken)
+                .userId(user.getId())
+                .fullName(user.getFullName())
+                .isOwner(user.isOwner())
+                .build();
+    }
+
+    private String generateJwt(User user) {
+        // Podemos agregar datos extra al token (payload)
+        Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("id", user.getId());
+        extraClaims.put("role", user.isOwner() ? "OWNER" : "RENTER");
+
+        return jwtService.generateToken(extraClaims, user.getEmail());
     }
 }
