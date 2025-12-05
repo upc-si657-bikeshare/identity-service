@@ -21,4 +21,10 @@ public class AuthController {
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }
+    @PutMapping("/change-password/{userId}")
+    public ResponseEntity<Void> changePassword(@PathVariable Long userId,
+                                               @Valid @RequestBody ChangePasswordRequest request) {
+        authService.changePassword(userId, request);
+        return ResponseEntity.ok().build();
+    }
 }

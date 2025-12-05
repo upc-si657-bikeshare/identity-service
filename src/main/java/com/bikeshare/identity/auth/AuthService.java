@@ -19,7 +19,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final ProfileService profileService;
     private final PasswordEncoder passwordEncoder;
-    private final JwtService jwtService; // <--- Inyectamos el nuevo servicio
+    private final JwtService jwtService;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -36,8 +36,6 @@ public class AuthService {
         User savedUser = userRepository.save(user);
 
         profileService.createProfileForUser(savedUser);
-
-        // Generar Token
         String jwtToken = generateJwt(savedUser);
 
         return AuthResponse.builder()
@@ -55,8 +53,6 @@ public class AuthService {
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             throw new IllegalArgumentException("Usuario o contraseña inválidos");
         }
-
-        // Generar Token
         String jwtToken = generateJwt(user);
 
         return AuthResponse.builder()
@@ -68,11 +64,19 @@ public class AuthService {
     }
 
     private String generateJwt(User user) {
-        // Podemos agregar datos extra al token (payload)
         Map<String, Object> extraClaims = new HashMap<>();
         extraClaims.put("id", user.getId());
         extraClaims.put("role", user.isOwner() ? "OWNER" : "RENTER");
 
         return jwtService.generateToken(extraClaims, user.getEmail());
+    }
+    public void changePassword(Long userId, ChangePasswordRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new IllegalArgumentException("La contraseña actual es incorrecta");
+        }
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
     }
 }
