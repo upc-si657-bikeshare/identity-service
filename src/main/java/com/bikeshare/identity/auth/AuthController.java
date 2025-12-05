@@ -27,4 +27,9 @@ public class AuthController {
         authService.changePassword(userId, request);
         return ResponseEntity.ok().build();
     }
+    @PostMapping("/force-reset-password")
+    public ResponseEntity<Void> forceResetPassword(@Valid @RequestBody ForceResetRequest request) {
+        authService.forceResetPassword(request);
+        return ResponseEntity.ok().build();
+    }
 }
